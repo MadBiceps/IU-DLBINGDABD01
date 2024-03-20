@@ -9,6 +9,20 @@ services:
     networks:
       - bigdata-net
 
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: "adminpass"  # Setze hier ein sicheres Passwort
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    restart: unless-stopped
+    networks:
+      - bigdata-net
+
   zoo:
     image: confluentinc/cp-zookeeper:7.3.2
     hostname: zoo
@@ -31,7 +45,7 @@ services:
       - "29092:29092"
       - "9999:9999"
     environment:
-      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9092,DOCKER://host.docker.internal:29092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://127.0.0.1:9092,EXTERNAL://127.0.0.1:29092,DOCKER://kafka:39092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,DOCKER:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_ZOOKEEPER_CONNECT: "zoo:2181"
@@ -40,9 +54,6 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_JMX_PORT: 9999
-      KAFKA_JMX_HOSTNAME: ${DOCKER_HOST_IP:-127.0.0.1}
-      KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
       KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: true
     depends_on:
@@ -59,8 +70,8 @@ services:
     command: >
       bash -c "
         echo Waiting for Kafka to be ready... &&
-        cub kafka-ready -b kafka:9092 1 20 &&
-        kafka-topics --create --if-not-exists --bootstrap-server kafka:9092 --topic temperature --partitions 1 --replication-factor 1 &&
+        cub kafka-ready -b kafka:39092 1 20 &&
+        kafka-topics --create --if-not-exists --bootstrap-server kafka:39092 --topic temperature --partitions 1 --replication-factor 1 &&
         echo Topic your_topic_name created.
       "
     volumes:
@@ -146,9 +157,9 @@ services:
 
 networks:
   bigdata-net:
-    driver: bridge
 
 volumes:
   hadoop_namenode:
   hadoop_datanode:
   hadoop_historyserver:
+  grafana_data:

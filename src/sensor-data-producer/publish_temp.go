@@ -16,7 +16,7 @@ func main() {
 
     // Erstelle einen Kafka-Writer
     w := kafka.NewWriter(kafka.WriterConfig{
-        Brokers: []string{"kafka:9092"},
+        Brokers: []string{"kafka:39092"},
         Topic:   topic,
     })
     defer w.Close()
