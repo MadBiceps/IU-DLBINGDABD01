@@ -11,10 +11,8 @@ import (
 )
 
 func main() {
-    // Kafka-Topic konfigurieren
     topic := "temperature"
 
-    // Erstelle einen Kafka-Writer
     w := kafka.NewWriter(kafka.WriterConfig{
         Brokers: []string{"kafka:39092"},
         Topic:   topic,
@@ -24,26 +22,33 @@ func main() {
     rand.Seed(time.Now().UnixNano())
 
     for {
-        // Generiere eine zufällige Temperatur
-        temp := 20 + rand.Float64()*(500-100) // Zufällige Temperatur zwischen 20°C und 35°C
-        tempStr := fmt.Sprintf("%.2f", temp)
+        value1 := 20 + rand.Float64()*(35-20)
+        value2 := rand.Intn(15) + 10
+        value3 := rand.Float64() * 100
 
-        // Erstelle eine Nachricht
-        msg := kafka.Message{
-            Key:   []byte(strconv.FormatInt(time.Now().Unix(), 10)),
-            Value: []byte(tempStr),
+        msgMap := map[string]interface{}{
+            "machine1": value1,
+            "machine2": value2,
+            "machine3": value3,
+        }
+        msgBytes, err := json.Marshal(msgMap)
+        if err != nil {
+            fmt.Println("Failed to marshal JSON:", err)
+            return
         }
 
-        // Veröffentliche die Nachricht auf Kafka
-        err := w.WriteMessages(context.Background(), msg)
+        msg := kafka.Message{
+            Key:   []byte(strconv.FormatInt(time.Now().Unix(), 10)),
+            Value: msgBytes,
+        }
+
+        err = w.WriteMessages(context.Background(), msg)
         if err != nil {
             fmt.Println("Failed to write messages:", err)
             return
         }
 
-        fmt.Println("Published temperature:", tempStr)
-
-        // Warte für die Simulation
+        fmt.Println("Published message:", string(msgBytes))
         time.Sleep(5 * time.Second)
     }
 }
